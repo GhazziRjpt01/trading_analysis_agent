@@ -1,0 +1,65 @@
+# trading_analysis_agent
+
+Full-stack research tool for crypto, forex, and metals. Analysis and paper trading only. Do not treat outputs as financial advice.
+
+## Architecture
+
+- `client/`: React + Vite dashboard
+- `server/`: Node + Express API and AI agent orchestration (OpenAI)
+- `analysis/`: Python FastAPI service for market data, indicators, and backtesting
+- Database: Supabase (PostgreSQL)
+
+Keep each concern in its own service. The client talks to the Express API. Express orchestrates the agent and calls the analysis service. Supabase is the system of record.
+
+## Asset classes
+
+Support these classes on one shared path. Do not special-case one so the others cannot use it.
+
+- Crypto pairs, for example `BTC/USDT` and `ETH/USDT`
+- Forex pairs, for example `EURUSD` and `GBPJPY`
+- Metals, for example Gold (`XAUUSD`, Yahoo `GC=F`) and Silver (`XAGUSD`, Yahoo `SI=F`)
+
+## Market data
+
+Every data source goes through a provider abstraction. Callers depend on the interface, not on a vendor.
+
+Every provider returns the same OHLCV rows:
+
+- `timestamp` — bar open time, UTC
+- `open`, `high`, `low`, `close` — prices as decimals
+- `volume` — base-asset volume when the source provides it; otherwise null, never a guessed number
+
+Adding a source means a new provider behind that interface. Indicators, backtests, and the agent consume OHLCV only.
+
+## No live trading
+
+No real order execution. No broker order APIs, no exchange trading keys used to place or cancel orders, and no withdrawal flows.
+
+Allowed: market analysis, indicators, backtests, and paper trading (simulated fills recorded locally or in Supabase).
+
+## Secrets
+
+Never hardcode API keys, tokens, connection strings, or other secrets in source, comments, tests, or docs.
+
+- Read secrets from environment variables.
+- Each service that needs config gets a `.env` (gitignored) and a committed `.env.example` with placeholder names only.
+- Document every new variable in the matching `.env.example`.
+
+```env
+# .env.example — names and placeholders only
+OPENAI_API_KEY=your_openai_api_key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
+## Code
+
+- Keep code clean: small functions, clear names, no unused paths.
+- Comment non-obvious intent (why a threshold, timeout, or data transform exists). Do not comment obvious lines.
+- Match the language and style already used in the file you are editing.
+
+## UI disclaimer
+
+Any user-facing screen that shows analysis, signals, backtests, or paper trades must include this disclaimer, visible without extra clicks:
+
+Research only, not financial advice.
